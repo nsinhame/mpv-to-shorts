@@ -155,6 +155,27 @@ while read -r line; do
     
     if [ $? -eq 0 ]; then
         echo "✓ Successfully created part $COUNT"
+        
+        # Calculate SHA-256 hash of the trimmed video
+        echo "Calculating SHA-256 hash for uniqueness..."
+        if command -v sha256sum &> /dev/null; then
+            # Linux/WSL
+            HASH=$(sha256sum "$OUTPUT_FILE" | cut -d' ' -f1)
+        elif command -v shasum &> /dev/null; then
+            # macOS
+            HASH=$(shasum -a 256 "$OUTPUT_FILE" | cut -d' ' -f1)
+        else
+            echo "Warning: SHA-256 utility not found. Keeping original filename."
+            HASH=""
+        fi
+        
+        # Rename the file with the hash if hash was calculated successfully
+        if [ -n "$HASH" ]; then
+            HASH_OUTPUT_FILE="${OUTPUT_DIR}/${HASH}.mp4"
+            mv "$OUTPUT_FILE" "$HASH_OUTPUT_FILE"
+            echo "✓ Renamed to: ${HASH}.mp4"
+            echo "  Hash: $HASH"
+        fi
     else
         echo "✗ Error creating part $COUNT"
     fi
