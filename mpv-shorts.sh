@@ -190,32 +190,25 @@ done < "$TIMESTAMPS_FILE"
 # ===== CLEANUP PHASE =====
 echo "Phase 3: Moving files to cache..."
 
-CACHE_DIR="cache"
-mkdir -p "$CACHE_DIR"
+# Create session-based cache directory (matching session structure)
+CACHE_SESSION_DIR="cache/session_${SESSION_TIMESTAMP}"
+mkdir -p "$CACHE_SESSION_DIR"
 
-# Get current timestamp for file versioning (consistent with session naming)
-CACHE_TIMESTAMP=$(date +%Y%m%d_%H%M%S)
-
-# Move timestamps.txt to cache with timestamp
+# Move timestamps.txt to cache session directory
 if [ -f "$TIMESTAMPS_FILE" ]; then
-    TIMESTAMPS_BASENAME=$(basename "$TIMESTAMPS_FILE" .txt)
-    TIMESTAMPED_FILE="${TIMESTAMPS_BASENAME}_${CACHE_TIMESTAMP}.txt"
-    mv "$TIMESTAMPS_FILE" "$CACHE_DIR/$TIMESTAMPED_FILE"
-    echo "✓ Moved $TIMESTAMPS_FILE to $CACHE_DIR/$TIMESTAMPED_FILE"
+    mv "$TIMESTAMPS_FILE" "$CACHE_SESSION_DIR/"
+    echo "✓ Moved $TIMESTAMPS_FILE to $CACHE_SESSION_DIR/"
 fi
 
-# Move all MP3 files with timestamps to cache
+# Move all MP3 files with timestamps to cache session directory
 moved_audio_count=0
 for file in *.mp3; do
     if [ -f "$file" ]; then
         # Only move files that have timestamp information in brackets
         timestamp_check=$(echo "$file" | sed -n 's/.*\[\(.*\)\].*/\1/p')
         if [ -n "$timestamp_check" ]; then
-            # Extract filename without extension and add timestamp
-            AUDIO_BASENAME=$(basename "$file" .mp3)
-            TIMESTAMPED_AUDIO="${AUDIO_BASENAME}_${CACHE_TIMESTAMP}.mp3"
-            mv "$file" "$CACHE_DIR/$TIMESTAMPED_AUDIO"
-            echo "✓ Moved $file to $CACHE_DIR/$TIMESTAMPED_AUDIO"
+            mv "$file" "$CACHE_SESSION_DIR/"
+            echo "✓ Moved $file to $CACHE_SESSION_DIR/"
             moved_audio_count=$((moved_audio_count+1))
         fi
     fi
@@ -226,9 +219,9 @@ echo
 
 echo "=== PROCESSING COMPLETE ==="
 echo "Original video: $INPUT_VIDEO"
-echo "Cache directory: $CACHE_DIR"
+echo "Cache session directory: $CACHE_SESSION_DIR"
 echo "Session directory: $OUTPUT_DIR"
 echo "Total parts created: $((COUNT-1))"
 echo
 echo "Your Shorts are ready in the '$OUTPUT_DIR' directory!"
-echo "Processed files have been moved to the '$CACHE_DIR' directory."
+echo "Processed files have been moved to the '$CACHE_SESSION_DIR' directory."
