@@ -19,7 +19,9 @@ fi
 
 INPUT_VIDEO="$1"
 TIMESTAMPS_FILE="timestamps.txt"
-OUTPUT_DIR="trimmed_videos"
+# Create session-based output directory with timestamp
+SESSION_TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+OUTPUT_DIR="trimmed_videos/session_${SESSION_TIMESTAMP}"
 
 # Check if input video file exists
 if [ ! -f "$INPUT_VIDEO" ]; then
@@ -125,11 +127,11 @@ fi
 # ===== VIDEO TRIMMING PHASE =====
 echo "Phase 2: Trimming video based on extracted timestamps..."
 
-# Create output directory if it doesn't exist
+# Create session-based output directory
 mkdir -p "$OUTPUT_DIR"
 
 echo "Processing video: $INPUT_VIDEO"
-echo "Output directory: $OUTPUT_DIR"
+echo "Session directory: $OUTPUT_DIR"
 echo
 
 # Read the timestamps file line by line
@@ -191,10 +193,15 @@ echo "Phase 3: Moving files to cache..."
 CACHE_DIR="cache"
 mkdir -p "$CACHE_DIR"
 
-# Move timestamps.txt to cache
+# Get current timestamp for file versioning (consistent with session naming)
+CACHE_TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+
+# Move timestamps.txt to cache with timestamp
 if [ -f "$TIMESTAMPS_FILE" ]; then
-    mv "$TIMESTAMPS_FILE" "$CACHE_DIR/"
-    echo "✓ Moved $TIMESTAMPS_FILE to $CACHE_DIR/"
+    TIMESTAMPS_BASENAME=$(basename "$TIMESTAMPS_FILE" .txt)
+    TIMESTAMPED_FILE="${TIMESTAMPS_BASENAME}_${CACHE_TIMESTAMP}.txt"
+    mv "$TIMESTAMPS_FILE" "$CACHE_DIR/$TIMESTAMPED_FILE"
+    echo "✓ Moved $TIMESTAMPS_FILE to $CACHE_DIR/$TIMESTAMPED_FILE"
 fi
 
 # Move all MP3 files with timestamps to cache
@@ -204,8 +211,11 @@ for file in *.mp3; do
         # Only move files that have timestamp information in brackets
         timestamp_check=$(echo "$file" | sed -n 's/.*\[\(.*\)\].*/\1/p')
         if [ -n "$timestamp_check" ]; then
-            mv "$file" "$CACHE_DIR/"
-            echo "✓ Moved $file to $CACHE_DIR/"
+            # Extract filename without extension and add timestamp
+            AUDIO_BASENAME=$(basename "$file" .mp3)
+            TIMESTAMPED_AUDIO="${AUDIO_BASENAME}_${CACHE_TIMESTAMP}.mp3"
+            mv "$file" "$CACHE_DIR/$TIMESTAMPED_AUDIO"
+            echo "✓ Moved $file to $CACHE_DIR/$TIMESTAMPED_AUDIO"
             moved_audio_count=$((moved_audio_count+1))
         fi
     fi
@@ -217,7 +227,7 @@ echo
 echo "=== PROCESSING COMPLETE ==="
 echo "Original video: $INPUT_VIDEO"
 echo "Cache directory: $CACHE_DIR"
-echo "Output directory: $OUTPUT_DIR"
+echo "Session directory: $OUTPUT_DIR"
 echo "Total parts created: $((COUNT-1))"
 echo
 echo "Your Shorts are ready in the '$OUTPUT_DIR' directory!"
